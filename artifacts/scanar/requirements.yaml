@@ -1,0 +1,15 @@
+packages:
+  "framer-motion": "For smooth page transitions and the hero scanner animation"
+  "react-dropzone": "For the drag and drop 3D model upload area"
+  "qrcode.react": "To generate the downloadable QR code for the AR viewer"
+  "lucide-react": "For UI icons across the application"
+
+images:
+  - path: "artifacts/scanar/public/images/hero-bg.png"
+    description: "Futuristic cyberpunk abstract background with deep dark space, glowing neon cyan and purple geometric grids, and a subtle glowing 3D wireframe mesh in the center. Very dark background."
+    aspect_ratio: "16:9"
+
+notes:
+  - "The API expects POST /api/models/upload with a multipart/form-data payload containing a 'model' field."
+  - "The <model-viewer> web component is dynamically loaded via a script tag in the Viewer page to avoid needing to manually edit index.html."
+  - "Using qrcode.react to generate canvas-based QR codes that can be downloaded."

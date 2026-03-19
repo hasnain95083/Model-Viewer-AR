@@ -49,12 +49,12 @@ router.post("/register", async (req: Request, res: Response) => {
 
   const [user] = await db
     .insert(usersTable)
-    .values({ id, email: normalizedEmail, passwordHash })
+    .values({ id, email: normalizedEmail, passwordHash, plan: "free" })
     .returning();
 
   const token = signToken({ userId: user.id, email: user.email });
   res.cookie(COOKIE_NAME_EXPORT, token, cookieOptions(7 * 24 * 60 * 60 * 1000));
-  res.status(201).json({ id: user.id, email: user.email });
+  res.status(201).json({ id: user.id, email: user.email, plan: user.plan });
 });
 
 // POST /api/auth/login
@@ -85,7 +85,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
   const token = signToken({ userId: user.id, email: user.email });
   res.cookie(COOKIE_NAME_EXPORT, token, cookieOptions(7 * 24 * 60 * 60 * 1000));
-  res.json({ id: user.id, email: user.email });
+  res.json({ id: user.id, email: user.email, plan: user.plan });
 });
 
 // POST /api/auth/logout
@@ -95,8 +95,18 @@ router.post("/logout", (_req: Request, res: Response) => {
 });
 
 // GET /api/auth/me
-router.get("/me", requireAuth, (req: AuthRequest, res: Response) => {
-  res.json({ id: req.user!.userId, email: req.user!.email });
+router.get("/me", requireAuth, async (req: AuthRequest, res: Response) => {
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, req.user!.userId));
+
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json({ id: user.id, email: user.email, plan: user.plan });
 });
 
 export default router;

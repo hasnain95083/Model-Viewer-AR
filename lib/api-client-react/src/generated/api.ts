@@ -23,6 +23,8 @@ import type {
   HealthStatus,
   MessageResponse,
   Model,
+  SubscriptionInfo,
+  UpgradePlanRequest,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -110,7 +112,7 @@ export function useHealthCheck<
 }
 
 /**
- * @summary List all uploaded models
+ * @summary List user's uploaded models
  */
 export const getListModelsUrl = () => {
   return `/api/models`;
@@ -159,7 +161,7 @@ export type ListModelsQueryResult = NonNullable<
 export type ListModelsQueryError = ErrorType<unknown>;
 
 /**
- * @summary List all uploaded models
+ * @summary List user's uploaded models
  */
 
 export function useListModels<
@@ -582,3 +584,164 @@ export function useGetMe<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get current user's subscription details
+ */
+export const getGetSubscriptionUrl = () => {
+  return `/api/subscription`;
+};
+
+export const getSubscription = async (
+  options?: RequestInit,
+): Promise<SubscriptionInfo> => {
+  return customFetch<SubscriptionInfo>(getGetSubscriptionUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetSubscriptionQueryKey = () => {
+  return [`/api/subscription`] as const;
+};
+
+export const getGetSubscriptionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetSubscriptionQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getSubscription>>> = ({
+    signal,
+  }) => getSubscription({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetSubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getSubscription>>
+>;
+export type GetSubscriptionQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get current user's subscription details
+ */
+
+export function useGetSubscription<
+  TData = Awaited<ReturnType<typeof getSubscription>>,
+  TError = ErrorType<ErrorResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getSubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSubscriptionQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upgrade or change subscription plan
+ */
+export const getUpgradePlanUrl = () => {
+  return `/api/subscription/upgrade`;
+};
+
+export const upgradePlan = async (
+  upgradePlanRequest: UpgradePlanRequest,
+  options?: RequestInit,
+): Promise<SubscriptionInfo> => {
+  return customFetch<SubscriptionInfo>(getUpgradePlanUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(upgradePlanRequest),
+  });
+};
+
+export const getUpgradePlanMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradePlan>>,
+    TError,
+    { data: BodyType<UpgradePlanRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upgradePlan>>,
+  TError,
+  { data: BodyType<UpgradePlanRequest> },
+  TContext
+> => {
+  const mutationKey = ["upgradePlan"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upgradePlan>>,
+    { data: BodyType<UpgradePlanRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return upgradePlan(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpgradePlanMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upgradePlan>>
+>;
+export type UpgradePlanMutationBody = BodyType<UpgradePlanRequest>;
+export type UpgradePlanMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upgrade or change subscription plan
+ */
+export const useUpgradePlan = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upgradePlan>>,
+    TError,
+    { data: BodyType<UpgradePlanRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upgradePlan>>,
+  TError,
+  { data: BodyType<UpgradePlanRequest> },
+  TContext
+> => {
+  return useMutation(getUpgradePlanMutationOptions(options));
+};

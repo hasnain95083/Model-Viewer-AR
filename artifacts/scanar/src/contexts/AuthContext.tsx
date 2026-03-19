@@ -1,8 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
+export type Plan = "free" | "pro" | "business";
+
 export interface AuthUser {
   id: string;
   email: string;
+  plan: Plan;
 }
 
 interface AuthContextValue {
@@ -11,6 +14,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,13 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Check session on mount
-  useEffect(() => {
-    apiFetch("/api/auth/me")
-      .then((data) => setUser(data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+  const fetchMe = useCallback(async () => {
+    try {
+      const data = await apiFetch("/api/auth/me");
+      setUser(data);
+    } catch {
+      setUser(null);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchMe().finally(() => setLoading(false));
+  }, [fetchMe]);
 
   const login = useCallback(async (email: string, password: string) => {
     const data = await apiFetch("/api/auth/login", {
@@ -59,8 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    await fetchMe();
+  }, [fetchMe]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

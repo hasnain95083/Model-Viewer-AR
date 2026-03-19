@@ -13,6 +13,8 @@ tags:
     description: 3D model operations
   - name: auth
     description: Authentication operations
+  - name: subscription
+    description: Subscription and plan operations
 paths:
   /healthz:
     get:
@@ -30,7 +32,7 @@ paths:
     get:
       operationId: listModels
       tags: [models]
-      summary: List all uploaded models
+      summary: List user's uploaded models
       responses:
         "200":
           description: List of models
@@ -142,6 +144,54 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /subscription:
+    get:
+      operationId: getSubscription
+      tags: [subscription]
+      summary: Get current user's subscription details
+      responses:
+        "200":
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionInfo"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /subscription/upgrade:
+    post:
+      operationId: upgradePlan
+      tags: [subscription]
+      summary: Upgrade or change subscription plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpgradePlanRequest"
+      responses:
+        "200":
+          description: Plan updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionInfo"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -181,7 +231,28 @@ components:
           type: string
         email:
           type: string
-      required: [id, email]
+        plan:
+          type: string
+      required: [id, email, plan]
+    SubscriptionInfo:
+      type: object
+      properties:
+        plan:
+          type: string
+        modelCount:
+          type: number
+        limit:
+          type: number
+        canUpload:
+          type: boolean
+      required: [plan, modelCount, limit, canUpload]
+    UpgradePlanRequest:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, pro, business]
+      required: [plan]
     MessageResponse:
       type: object
       properties:

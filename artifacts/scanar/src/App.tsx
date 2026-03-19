@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { type ComponentType, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 import Home from "@/pages/home";
@@ -12,25 +13,41 @@ import ViewerPage from "@/pages/viewer";
 import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
 import DashboardPage from "@/pages/dashboard";
+import PricingPage from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-    }
-  }
+    queries: { refetchOnWindowFocus: false, retry: 1 },
+  },
 });
+
+const pageVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+};
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function ProtectedRoute({ component: Component }: { component: ComponentType }) {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
-    }
+    if (!loading && !user) navigate("/login");
   }, [user, loading, navigate]);
 
   if (loading) {
@@ -40,9 +57,8 @@ function ProtectedRoute({ component: Component }: { component: ComponentType }) 
       </div>
     );
   }
-
   if (!user) return null;
-  return <Component />;
+  return <PageWrapper><Component /></PageWrapper>;
 }
 
 function GuestRoute({ component: Component }: { component: ComponentType }) {
@@ -50,9 +66,7 @@ function GuestRoute({ component: Component }: { component: ComponentType }) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate("/dashboard");
-    }
+    if (!loading && user) navigate("/dashboard");
   }, [user, loading, navigate]);
 
   if (loading) {
@@ -62,30 +76,41 @@ function GuestRoute({ component: Component }: { component: ComponentType }) {
       </div>
     );
   }
-
   if (user) return null;
-  return <Component />;
+  return <PageWrapper><Component /></PageWrapper>;
 }
 
 function Router() {
+  const [location] = useLocation();
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/login">
-        <GuestRoute component={LoginPage} />
-      </Route>
-      <Route path="/signup">
-        <GuestRoute component={SignupPage} />
-      </Route>
-      <Route path="/dashboard">
-        <ProtectedRoute component={DashboardPage} />
-      </Route>
-      <Route path="/upload">
-        <ProtectedRoute component={UploadPage} />
-      </Route>
-      <Route path="/viewer/:id" component={ViewerPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait">
+      <Switch key={location}>
+        <Route path="/">
+          <PageWrapper><Home /></PageWrapper>
+        </Route>
+        <Route path="/pricing">
+          <PageWrapper><PricingPage /></PageWrapper>
+        </Route>
+        <Route path="/login">
+          <GuestRoute component={LoginPage} />
+        </Route>
+        <Route path="/signup">
+          <GuestRoute component={SignupPage} />
+        </Route>
+        <Route path="/dashboard">
+          <ProtectedRoute component={DashboardPage} />
+        </Route>
+        <Route path="/upload">
+          <ProtectedRoute component={UploadPage} />
+        </Route>
+        <Route path="/viewer/:id">
+          <PageWrapper><ViewerPage /></PageWrapper>
+        </Route>
+        <Route>
+          <PageWrapper><NotFound /></PageWrapper>
+        </Route>
+      </Switch>
+    </AnimatePresence>
   );
 }
 

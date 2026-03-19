@@ -15,7 +15,7 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * @summary List all uploaded models
+ * @summary List user's uploaded models
  */
 export const ListModelsResponseItem = zod.object({
   id: zod.string(),
@@ -64,6 +64,7 @@ export const LoginBody = zod.object({
 export const LoginResponse = zod.object({
   id: zod.string(),
   email: zod.string(),
+  plan: zod.string(),
 });
 
 /**
@@ -79,4 +80,29 @@ export const LogoutResponse = zod.object({
 export const GetMeResponse = zod.object({
   id: zod.string(),
   email: zod.string(),
+  plan: zod.string(),
+});
+
+/**
+ * @summary Get current user's subscription details
+ */
+export const GetSubscriptionResponse = zod.object({
+  plan: zod.string(),
+  modelCount: zod.number(),
+  limit: zod.number(),
+  canUpload: zod.boolean(),
+});
+
+/**
+ * @summary Upgrade or change subscription plan
+ */
+export const UpgradePlanBody = zod.object({
+  plan: zod.enum(["free", "pro", "business"]),
+});
+
+export const UpgradePlanResponse = zod.object({
+  plan: zod.string(),
+  modelCount: zod.number(),
+  limit: zod.number(),
+  canUpload: zod.boolean(),
 });

@@ -12,3 +12,6 @@ export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./messageResponse";
 export * from "./model";
+export * from "./subscriptionInfo";
+export * from "./upgradePlanRequest";
+export * from "./upgradePlanRequestPlan";

@@ -26,6 +26,27 @@ export interface AuthCredentials {
 export interface AuthUser {
   id: string;
   email: string;
+  plan: string;
+}
+
+export interface SubscriptionInfo {
+  plan: string;
+  modelCount: number;
+  limit: number;
+  canUpload: boolean;
+}
+
+export type UpgradePlanRequestPlan =
+  (typeof UpgradePlanRequestPlan)[keyof typeof UpgradePlanRequestPlan];
+
+export const UpgradePlanRequestPlan = {
+  free: "free",
+  pro: "pro",
+  business: "business",
+} as const;
+
+export interface UpgradePlanRequest {
+  plan: UpgradePlanRequestPlan;
 }
 
 export interface MessageResponse {

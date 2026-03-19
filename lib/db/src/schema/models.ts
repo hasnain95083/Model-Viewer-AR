@@ -7,6 +7,7 @@ export const modelsTable = pgTable("models", {
   name: text("name").notNull(),
   filename: text("filename").notNull(),
   filepath: text("filepath").notNull(),
+  userId: text("user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

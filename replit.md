@@ -50,21 +50,36 @@ ScanAR is a SaaS-style AR platform where users upload 3D models (.glb/.gltf) and
 - qrcode.react for QR generation
 - react-dropzone for file upload
 - model-viewer (via CDN) for AR/3D rendering
-- Wouter for client-side routing (pages: /, /upload, /viewer/:id)
+- Wouter for client-side routing (pages: /, /login, /signup, /dashboard, /upload, /viewer/:id)
+- Protected routes: /upload, /dashboard require auth; /login, /signup redirect to dashboard if logged in
+- AuthContext (`src/contexts/AuthContext.tsx`) manages session state via /api/auth/me check on mount
 
 ### Backend (artifacts/api-server)
 - Express 5 API server
 - Multer for multipart file uploads (100MB limit)
+- cookie-parser for httpOnly JWT cookies
 - Files stored in `artifacts/api-server/uploads/`
 - Routes:
   - `GET /api/models` — list all uploaded models
   - `GET /api/models/:id` — get model by ID
   - `GET /api/models/:id/file` — serve the raw 3D file
-  - `POST /api/models/upload` — upload a .glb or .gltf file
+  - `POST /api/models/upload` — upload a .glb or .gltf file (requires auth)
+  - `POST /api/auth/register` — create account (email + password)
+  - `POST /api/auth/login` — login, sets httpOnly JWT cookie
+  - `POST /api/auth/logout` — clears session cookie
+  - `GET /api/auth/me` — returns current user from JWT
+
+### Auth System
+- JWT tokens stored in httpOnly cookies (7-day expiry)
+- Passwords hashed with bcrypt (12 rounds)
+- `artifacts/api-server/src/lib/auth.ts` — JWT sign/verify, bcrypt helpers, cookie options
+- `artifacts/api-server/src/middlewares/requireAuth.ts` — auth middleware
+- `artifacts/api-server/src/routes/auth.ts` — register/login/logout/me routes
 
 ### Database (lib/db)
 - PostgreSQL + Drizzle ORM
 - Table: `models` (id, name, filename, filepath, createdAt)
+- Table: `users` (id, email, passwordHash, createdAt)
 
 ## TypeScript & Composite Projects
 

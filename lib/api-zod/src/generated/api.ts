@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -40,4 +39,44 @@ export const GetModelResponse = zod.object({
   filename: zod.string(),
   url: zod.string(),
   createdAt: zod.string(),
+});
+
+/**
+ * @summary Register a new user
+ */
+export const registerBodyPasswordMin = 6;
+
+export const RegisterBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string().min(registerBodyPasswordMin),
+});
+
+/**
+ * @summary Login with email and password
+ */
+export const loginBodyPasswordMin = 6;
+
+export const LoginBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string().min(loginBodyPasswordMin),
+});
+
+export const LoginResponse = zod.object({
+  id: zod.string(),
+  email: zod.string(),
+});
+
+/**
+ * @summary Logout current user
+ */
+export const LogoutResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Get current authenticated user
+ */
+export const GetMeResponse = zod.object({
+  id: zod.string(),
+  email: zod.string(),
 });

@@ -17,6 +17,21 @@ export interface Model {
   createdAt: string;
 }
 
+export interface AuthCredentials {
+  email: string;
+  /** @minLength 6 */
+  password: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }

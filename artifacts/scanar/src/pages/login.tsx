@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useLocation, Link } from "wouter";
 import { motion } from "framer-motion";
-import { Mail, Lock, LogIn, Loader2, AlertCircle, Scan } from "lucide-react";
+import { Mail, Lock, LogIn, Loader2, AlertCircle, Scan, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
@@ -38,6 +38,22 @@ export default function LoginPage() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-accent/8 blur-3xl" />
       </div>
 
+      {/* Back to Home */}
+      <motion.div
+        initial={{ opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.35 }}
+        className="absolute top-6 left-6 z-20"
+      >
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-primary border border-transparent hover:border-primary/25 hover:bg-primary/[0.07] hover:shadow-[0_0_14px_rgba(0,212,255,0.12)] transition-all duration-200"
+        >
+          <ArrowLeft className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+          Back to Home
+        </Link>
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -46,8 +62,8 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center shadow-[0_0_15px_rgba(0,212,255,0.2)]">
+          <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 group-hover:border-primary/60 group-hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] flex items-center justify-center shadow-[0_0_15px_rgba(0,212,255,0.2)] transition-all">
               <Scan className="w-6 h-6 text-primary" />
             </div>
             <span className="font-display font-bold text-2xl tracking-wider">

@@ -6,23 +6,7 @@ import type { Plan } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import {
-  UploadCloud, Cuboid, Eye, Clock, User,
-  Loader2, Plus, Zap, ArrowRight, Infinity,
-  TrendingUp, Star
-} from "lucide-react";
-
-const planIcons: Record<Plan, typeof Star> = {
-  free: Star,
-  pro: Zap,
-  business: Infinity,
-};
-
-const planColors: Record<Plan, string> = {
-  free: "text-white/50",
-  pro: "text-primary",
-  business: "text-accent",
-};
+import { UploadCloud, Cuboid, Eye, Clock, Loader2, Plus, Zap, ArrowRight, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -33,7 +17,6 @@ export default function DashboardPage() {
 
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? "?";
   const plan = (sub?.plan ?? user?.plan ?? "free") as Plan;
-  const PlanIcon = planIcons[plan];
   const planMeta = PLAN_META[plan];
   const modelCount = sub?.modelCount ?? 0;
   const limit = sub?.limit ?? 1;
@@ -44,10 +27,7 @@ export default function DashboardPage() {
     const nextPlan: Plan = plan === "free" ? "pro" : "business";
     try {
       await upgradeMutation.mutateAsync(nextPlan);
-      toast({
-        title: `Upgraded to ${PLAN_META[nextPlan].label}!`,
-        description: `You now have ${PLAN_META[nextPlan].limit} uploads.`,
-      });
+      toast({ title: `Upgraded to ${PLAN_META[nextPlan].label}!`, description: `You now have ${PLAN_META[nextPlan].limit} uploads.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -55,247 +35,180 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Welcome header */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
+        {/* Page header */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
         >
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30 flex items-center justify-center text-primary font-display font-bold text-lg shadow-[0_0_20px_rgba(0,212,255,0.2)]">
-                {initials}
-              </div>
-              <div className={`absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full border-2 border-background flex items-center justify-center ${planColors[plan]} bg-card`}>
-                <PlanIcon className="w-3 h-3" />
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-lime-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              {initials}
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-display font-bold">
-                Welcome back
-              </h1>
-              <p className="text-muted-foreground text-sm mt-0.5 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
-                {user?.email}
-              </p>
+              <h1 className="text-xl font-extrabold text-slate-900">Dashboard</h1>
+              <p className="text-sm text-slate-500">{user?.email}</p>
             </div>
           </div>
-
           <Link
             href="/upload"
-            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm shadow-[0_0_14px_rgba(0,212,255,0.3)] hover:shadow-[0_0_22px_rgba(191,0,255,0.5)] hover:-translate-y-0.5 transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all ${
               isAtLimit
-                ? "bg-white/5 border border-white/15 text-white/40 cursor-not-allowed pointer-events-none"
-                : "bg-gradient-to-r from-primary to-accent text-white"
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed pointer-events-none"
+                : "bg-lime-600 text-white hover:bg-lime-700"
             }`}
           >
             <Plus className="w-4 h-4" />
-            {isAtLimit ? "Limit Reached" : "Upload New Model"}
+            {isAtLimit ? "Limit Reached" : "Upload Model"}
           </Link>
         </motion.div>
 
-        {/* Stats + Plan row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        {/* Stats row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {/* Models */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            className="card p-5 flex items-center gap-4"
+          >
+            <div className="w-10 h-10 rounded-xl bg-lime-50 border border-lime-100 flex items-center justify-center shrink-0">
+              <Cuboid className="w-5 h-5 text-lime-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-slate-900">{subLoading ? "—" : modelCount}</p>
+              <p className="text-xs text-slate-500">Models Uploaded</p>
+            </div>
+          </motion.div>
 
-          {/* Stats */}
-          {[
-            { label: "Models Uploaded", value: subLoading ? "—" : modelCount, icon: Cuboid, color: "text-primary" },
-            { label: "AR Experiences", value: subLoading ? "—" : modelCount, icon: TrendingUp, color: "text-accent" },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex items-center gap-4 hover:border-white/20 transition-colors"
-            >
-              <div className={`w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${stat.color} shrink-0`}>
-                <stat.icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-3xl font-display font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            </motion.div>
-          ))}
+          {/* AR Experiences */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="card p-5 flex items-center gap-4"
+          >
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-extrabold text-slate-900">{subLoading ? "—" : modelCount}</p>
+              <p className="text-xs text-slate-500">AR Experiences</p>
+            </div>
+          </motion.div>
 
           {/* Plan card */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className={`rounded-2xl border ${planMeta.border} ${planMeta.bg} p-5 relative overflow-hidden hover:${planMeta.glow} transition-all`}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="card p-5"
           >
-            {plan !== "free" && (
-              <div className={`absolute top-0 left-0 right-0 h-[2px] ${
-                plan === "pro"
-                  ? "bg-gradient-to-r from-primary/0 via-primary to-primary/0"
-                  : "bg-gradient-to-r from-accent/0 via-accent to-accent/0"
-              }`} />
-            )}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <PlanIcon className={`w-4 h-4 ${planColors[plan]}`} />
-                <span className={`font-display font-bold text-sm ${planColors[plan]}`}>
-                  {planMeta.label} Plan
-                </span>
+                <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  plan === "free" ? "bg-slate-100 text-slate-600" :
+                  plan === "pro" ? "bg-lime-100 text-lime-700" :
+                  "bg-slate-900 text-white"
+                }`}>{planMeta.label}</span>
+                <span className="text-xs text-slate-400">Plan</span>
               </div>
-              <Link
-                href="/pricing"
-                className="text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-1"
-              >
-                See plans <ArrowRight className="w-3 h-3" />
+              <Link href="/pricing" className="text-xs text-slate-400 hover:text-slate-700 transition-colors flex items-center gap-0.5">
+                Plans <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
-
-            {/* Usage bar */}
-            <div className="mb-3">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Models used</span>
-                <span className={`font-mono ${isAtLimit ? "text-red-400" : ""}`}>
+            <div className="mb-2.5">
+              <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                <span>Usage</span>
+                <span className={`font-mono font-semibold ${isAtLimit ? "text-red-500" : "text-slate-700"}`}>
                   {subLoading ? "…" : limit === -1 ? `${modelCount} / ∞` : `${modelCount} / ${limit}`}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                  className={`h-full rounded-full ${
-                    isAtLimit ? "bg-red-400" : plan === "pro" ? "bg-primary" : plan === "business" ? "bg-accent" : "bg-white/40"
-                  }`}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className={`h-full rounded-full ${isAtLimit ? "bg-red-400" : plan === "pro" ? "bg-lime-500" : plan === "business" ? "bg-emerald-500" : "bg-slate-400"}`}
                 />
               </div>
             </div>
-
-            {/* Upgrade CTA */}
             {plan !== "business" && (
-              <button
-                onClick={handleQuickUpgrade}
-                disabled={upgradeMutation.isPending}
-                className={`w-full py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  plan === "free"
-                    ? "bg-primary/15 border border-primary/30 text-primary hover:bg-primary/25"
-                    : "bg-accent/15 border border-accent/30 text-accent hover:bg-accent/25"
-                }`}
+              <button onClick={handleQuickUpgrade} disabled={upgradeMutation.isPending}
+                className="w-full py-1.5 rounded-lg text-xs font-semibold bg-lime-50 border border-lime-200 text-lime-700 hover:bg-lime-100 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
               >
-                {upgradeMutation.isPending ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Zap className="w-3.5 h-3.5" />
-                )}
+                {upgradeMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
                 Upgrade to {plan === "free" ? "Pro" : "Business"}
               </button>
-            )}
-            {plan === "business" && (
-              <div className="w-full py-2 rounded-xl text-xs font-bold text-accent/60 text-center border border-accent/20 bg-accent/5">
-                ∞ Unlimited uploads active
-              </div>
             )}
           </motion.div>
         </div>
 
-        {/* Limit warning banner */}
+        {/* Limit warning */}
         {isAtLimit && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3"
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3"
           >
-            <Zap className="w-5 h-5 text-amber-400 shrink-0" />
+            <Zap className="w-5 h-5 text-amber-500 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-amber-400 font-semibold text-sm">Upload limit reached</p>
-              <p className="text-amber-400/70 text-xs">
-                You've used all {limit} model{limit === 1 ? "" : "s"} on the {planMeta.label} plan.
-              </p>
+              <p className="text-sm font-semibold text-amber-800">Upload limit reached</p>
+              <p className="text-xs text-amber-600">You've used all {limit} upload{limit === 1 ? "" : "s"} on the {planMeta.label} plan.</p>
             </div>
-            <Link
-              href="/pricing"
-              className="shrink-0 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold hover:bg-amber-500/30 transition-colors flex items-center gap-1.5"
-            >
-              <Zap className="w-3.5 h-3.5" /> Upgrade
+            <Link href="/pricing" className="px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold hover:bg-amber-600 transition-colors whitespace-nowrap">
+              Upgrade Now
             </Link>
           </motion.div>
         )}
 
         {/* Models grid */}
         <div>
-          <h2 className="text-base font-display font-bold mb-5 flex items-center gap-2 text-white/80">
-            <Cuboid className="w-4 h-4 text-primary" /> Your 3D Models
+          <h2 className="text-sm font-semibold text-slate-500 mb-4 flex items-center gap-2 uppercase tracking-wider">
+            <Cuboid className="w-4 h-4" /> Your Models
           </h2>
 
           {modelsLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
             </div>
           ) : !models || models.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-dashed border-white/10 bg-white/[0.01] flex flex-col items-center justify-center py-20 gap-4 text-center"
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center py-16 gap-4 text-center bg-white"
             >
-              <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/20">
-                <Cuboid className="w-10 h-10" />
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
+                <Cuboid className="w-7 h-7 text-slate-300" />
               </div>
               <div>
-                <p className="text-white/40 font-semibold mb-1">No models uploaded yet</p>
-                <p className="text-white/25 text-sm">Drop your first .glb or .gltf to get started</p>
+                <p className="font-semibold text-slate-600 mb-1">No models yet</p>
+                <p className="text-sm text-slate-400">Upload your first .glb or .gltf to get started</p>
               </div>
-              <Link
-                href="/upload"
-                className="mt-2 px-5 py-2.5 rounded-xl border border-primary/40 text-primary text-sm hover:bg-primary/10 transition-all flex items-center gap-2 font-semibold shadow-[0_0_12px_rgba(0,212,255,0.1)] hover:shadow-[0_0_20px_rgba(0,212,255,0.2)]"
-              >
+              <Link href="/upload" className="btn-primary flex items-center gap-2 text-sm">
                 <UploadCloud className="w-4 h-4" /> Upload First Model
               </Link>
             </motion.div>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {models.map((model, i) => (
                 <motion.div
                   key={model.id}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  whileHover={{ y: -4 }}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden hover:border-primary/30 hover:shadow-[0_0_25px_rgba(0,212,255,0.07)] transition-all group cursor-default"
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ y: -2 }}
+                  className="card overflow-hidden group hover:shadow-md transition-all duration-200"
                 >
-                  {/* Preview area */}
-                  <div className="h-36 bg-[#0a0a12] relative flex items-center justify-center overflow-hidden">
-                    <div
-                      className="absolute inset-0 pointer-events-none opacity-40"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(to right,#80808012 1px,transparent 1px),linear-gradient(to bottom,#80808012 1px,transparent 1px)",
-                        backgroundSize: "28px 28px",
-                      }}
-                    />
-                    {/* Scanline overlay on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 border border-primary/20 flex items-center justify-center text-white/25 group-hover:text-primary/70 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,212,255,0.2)] transition-all">
-                      <Cuboid className="w-7 h-7" />
+                  {/* Preview */}
+                  <div className="h-32 bg-slate-50 relative flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 dot-bg opacity-50" />
+                    <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-300 group-hover:text-lime-500 group-hover:border-lime-200 transition-all shadow-sm">
+                      <Cuboid className="w-6 h-6" />
                     </div>
-                    <span className="absolute top-3 right-3 text-xs font-mono px-2 py-0.5 rounded bg-black/60 border border-white/10 text-white/40">
+                    <span className="absolute top-2.5 right-2.5 text-[10px] font-mono px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-500 shadow-sm">
                       {model.filename.split(".").pop()?.toUpperCase()}
                     </span>
                   </div>
-
                   {/* Info */}
                   <div className="p-4">
-                    <h3 className="font-semibold text-white truncate mb-0.5 group-hover:text-primary/90 transition-colors">{model.name}</h3>
-                    <p className="text-xs text-muted-foreground truncate font-mono mb-3">{model.filename}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
-                      <Clock className="w-3.5 h-3.5 shrink-0" />
-                      {new Date(model.createdAt).toLocaleDateString(undefined, {
-                        month: "short", day: "numeric", year: "numeric",
-                      })}
+                    <h3 className="font-semibold text-slate-900 truncate text-sm mb-0.5 group-hover:text-lime-700 transition-colors">{model.name}</h3>
+                    <div className="flex items-center gap-1 text-xs text-slate-400 mb-3">
+                      <Clock className="w-3 h-3 shrink-0" />
+                      {new Date(model.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                     </div>
                     <Link
                       href={`/viewer/${model.id}`}
-                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-white/5 text-white/60 border border-white/10 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-[0_0_14px_rgba(0,212,255,0.25)] transition-all text-sm font-semibold"
+                      className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 hover:bg-lime-50 hover:border-lime-200 hover:text-lime-700 transition-all text-xs font-semibold"
                     >
-                      <Eye className="w-4 h-4" /> Open AR Viewer
+                      <Eye className="w-3.5 h-3.5" /> Open AR Viewer
                     </Link>
                   </div>
                 </motion.div>

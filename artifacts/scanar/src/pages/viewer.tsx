@@ -2,7 +2,7 @@ import { Layout } from "@/components/Layout";
 import { useParams } from "wouter";
 import { useGetModel } from "@/hooks/use-models";
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Cuboid, Expand, RefreshCw, QrCode, ArrowLeft, AlertCircle } from "lucide-react";
+import { Loader2, Cuboid, Expand, RefreshCw, QrCode, ArrowLeft, AlertCircle, UploadCloud } from "lucide-react";
 import { motion } from "framer-motion";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
@@ -12,13 +12,9 @@ declare global {
     interface IntrinsicElements {
       "model-viewer": React.DetailedHTMLProps<
         React.HTMLAttributes<HTMLElement> & {
-          src?: string;
-          alt?: string;
-          ar?: boolean;
-          "ar-modes"?: string;
-          "camera-controls"?: boolean;
-          "auto-rotate"?: boolean;
-          "shadow-intensity"?: string;
+          src?: string; alt?: string; ar?: boolean;
+          "ar-modes"?: string; "camera-controls"?: boolean;
+          "auto-rotate"?: boolean; "shadow-intensity"?: string;
         },
         HTMLElement
       >;
@@ -29,13 +25,8 @@ declare global {
 function checkWebGL(): boolean {
   try {
     const canvas = document.createElement("canvas");
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
-    );
-  } catch {
-    return false;
-  }
+    return !!(window.WebGLRenderingContext && (canvas.getContext("webgl") || canvas.getContext("experimental-webgl")));
+  } catch { return false; }
 }
 
 export default function ViewerPage() {
@@ -47,21 +38,16 @@ export default function ViewerPage() {
   const [showQR, setShowQR] = useState(false);
   const viewerRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    setWebglSupported(checkWebGL());
-  }, []);
+  useEffect(() => { setWebglSupported(checkWebGL()); }, []);
 
   useEffect(() => {
     if (!webglSupported) return;
-    if (customElements.get("model-viewer")) {
-      setMvLoaded(true);
-      return;
-    }
+    if (customElements.get("model-viewer")) { setMvLoaded(true); return; }
     const script = document.createElement("script");
     script.src = "https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js";
     script.type = "module";
     script.onload = () => setMvLoaded(true);
-    script.onerror = () => console.warn("model-viewer failed to load");
+    script.onerror = () => console.warn("model-viewer failed");
     document.head.appendChild(script);
   }, [webglSupported]);
 
@@ -76,21 +62,18 @@ export default function ViewerPage() {
   const downloadQR = () => {
     const canvas = document.getElementById("viewer-qr-canvas") as HTMLCanvasElement;
     if (!canvas) return;
-    const url = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
     const a = document.createElement("a");
-    a.href = url;
+    a.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
     a.download = `scanar-${id}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   };
 
   if (isLoading) {
     return (
       <Layout>
         <div className="h-[80vh] flex flex-col items-center justify-center gap-4">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="text-muted-foreground tracking-widest text-sm animate-pulse">LOADING ASSET…</p>
+          <Loader2 className="w-10 h-10 text-lime-500 animate-spin" />
+          <p className="text-slate-400 text-sm">Loading model…</p>
         </div>
       </Layout>
     );
@@ -100,18 +83,13 @@ export default function ViewerPage() {
     return (
       <Layout>
         <div className="h-[80vh] flex flex-col items-center justify-center text-center px-6">
-          <div className="w-20 h-20 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive mb-6">
-            <Cuboid className="w-10 h-10" />
+          <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-400 mb-5">
+            <Cuboid className="w-8 h-8" />
           </div>
-          <h2 className="text-3xl font-display font-bold mb-2">Model Not Found</h2>
-          <p className="text-muted-foreground max-w-md mb-8">
-            The 3D model could not be loaded. It may have been removed or the ID is invalid.
-          </p>
-          <Link
-            href="/upload"
-            className="px-6 py-3 rounded-xl bg-primary/20 text-primary border border-primary/40 hover:bg-primary hover:text-primary-foreground transition-all font-semibold"
-          >
-            Upload a Model
+          <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Model Not Found</h2>
+          <p className="text-slate-500 max-w-md mb-6">This 3D model could not be loaded. It may have been removed or the ID is invalid.</p>
+          <Link href="/upload" className="btn-primary flex items-center gap-2">
+            <UploadCloud className="w-4 h-4" /> Upload a Model
           </Link>
         </div>
       </Layout>
@@ -122,177 +100,108 @@ export default function ViewerPage() {
 
   return (
     <Layout>
-      <div
-        className="flex flex-col px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full"
-        style={{ height: "calc(100vh - 80px)" }}
-      >
+      <div className="flex flex-col px-4 sm:px-6 lg:px-8 py-5 max-w-7xl mx-auto w-full" style={{ height: "calc(100vh - 80px)" }}>
+
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-5 shrink-0">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/upload"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white transition-colors"
-            >
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition-colors">
               <ArrowLeft className="w-4 h-4" /> Back
             </Link>
+            <div className="h-4 w-px bg-slate-200" />
             <div>
-              <h1 className="text-xl md:text-2xl font-display font-bold flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 {model.name}
-                <span className="text-xs font-sans px-2 py-0.5 rounded bg-white/10 border border-white/20 text-white/60">
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-500">
                   {model.filename.split(".").pop()?.toUpperCase()}
                 </span>
               </h1>
-              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{model.id}</p>
+              <p className="text-xs text-slate-400 font-mono">{model.id}</p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={resetCamera}
-              className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors flex items-center gap-1.5 text-sm"
-            >
-              <RefreshCw className="w-4 h-4" /> Reset View
+            <button onClick={resetCamera}
+              className="btn-secondary flex items-center gap-1.5 text-sm py-2 px-3">
+              <RefreshCw className="w-3.5 h-3.5" /> Reset
             </button>
-            <button
-              onClick={() => setShowQR((v) => !v)}
-              className={`px-3 py-2 rounded-lg border transition-colors flex items-center gap-1.5 text-sm ${
-                showQR
-                  ? "border-primary/50 bg-primary/10 text-primary"
-                  : "border-white/10 bg-white/5 hover:bg-white/10"
-              }`}
-            >
-              <QrCode className="w-4 h-4" /> QR Code
+            <button onClick={() => setShowQR((v) => !v)}
+              className={`flex items-center gap-1.5 text-sm py-2 px-3 rounded-xl border font-semibold transition-all ${
+                showQR ? "bg-lime-600 border-lime-600 text-white" : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              }`}>
+              <QrCode className="w-3.5 h-3.5" /> QR Code
             </button>
           </div>
         </div>
 
-        {/* Viewer + optional QR panel */}
+        {/* Viewer + QR panel */}
         <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
 
-          {/* model-viewer area */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex-1 rounded-2xl overflow-hidden relative bg-[#0d0d14] border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+          {/* model-viewer card */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            className="flex-1 card overflow-hidden relative"
           >
-            {/* Grid */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right,#80808010 1px,transparent 1px),linear-gradient(to bottom,#80808010 1px,transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            />
+            {/* Subtle dot bg */}
+            <div className="absolute inset-0 dot-bg opacity-50 pointer-events-none" />
 
-            {/* WebGL not supported */}
             {webglSupported === false && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-8 z-10">
-                <div className="w-16 h-16 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400">
-                  <AlertCircle className="w-8 h-8" />
+                <div className="w-14 h-14 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500">
+                  <AlertCircle className="w-7 h-7" />
                 </div>
                 <div>
-                  <p className="text-white/70 font-semibold mb-1">3D viewer not available</p>
-                  <p className="text-white/40 text-sm max-w-xs">
-                    Your browser doesn't support WebGL. Open this page on a mobile device to view in AR.
-                  </p>
+                  <p className="font-semibold text-slate-700 mb-1">3D viewer not available</p>
+                  <p className="text-sm text-slate-400 max-w-xs">Your browser doesn't support WebGL. Open on a mobile device to view in AR.</p>
                 </div>
-                <a
-                  href={modelFileUrl}
-                  download
-                  className="mt-2 px-5 py-2.5 rounded-lg border border-primary/40 text-primary text-sm hover:bg-primary/10 transition-colors"
-                >
-                  Download Model File
-                </a>
+                <a href={modelFileUrl} download className="btn-secondary text-sm flex items-center gap-2">Download Model File</a>
               </div>
             )}
 
-            {/* Loading engine */}
             {webglSupported === true && !mvLoaded && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-primary/60 z-10">
-                <Loader2 className="w-10 h-10 animate-spin" />
-                <span className="text-sm tracking-wider">LOADING WEBXR ENGINE…</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-400 z-10">
+                <Loader2 className="w-8 h-8 animate-spin" />
+                <span className="text-sm">Loading WebXR engine…</span>
               </div>
             )}
 
-            {/* model-viewer */}
             {webglSupported === true && mvLoaded && (
-              <model-viewer
-                ref={viewerRef as any}
-                src={modelFileUrl}
-                alt={model.name}
-                ar
-                ar-modes="webxr scene-viewer quick-look"
-                camera-controls
-                auto-rotate
-                shadow-intensity="1"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  inset: 0,
-                  background: "transparent",
-                }}
+              <model-viewer ref={viewerRef as any} src={modelFileUrl} alt={model.name}
+                ar ar-modes="webxr scene-viewer quick-look" camera-controls auto-rotate shadow-intensity="0.6"
+                style={{ width: "100%", height: "100%", position: "absolute", inset: 0, background: "transparent" }}
               >
-                <button
-                  slot="ar-button"
-                  style={{
-                    position: "absolute",
-                    bottom: "24px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    padding: "14px 32px",
-                    background: "linear-gradient(to right, #00d4ff, #bf00ff)",
-                    border: "none",
-                    borderRadius: "999px",
-                    color: "white",
-                    fontWeight: "bold",
-                    fontSize: "15px",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    boxShadow: "0 0 20px rgba(0,212,255,0.4)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <Expand style={{ width: 18, height: 18 }} /> View in AR
+                <button slot="ar-button" style={{
+                  position: "absolute", bottom: "24px", left: "50%", transform: "translateX(-50%)",
+                  padding: "12px 28px", background: "#65a30d", border: "none",
+                  borderRadius: "999px", color: "white", fontWeight: "700", fontSize: "14px",
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: "8px",
+                  boxShadow: "0 4px 16px rgba(101,163,13,0.35)", whiteSpace: "nowrap",
+                }}>
+                  <Expand style={{ width: 16, height: 16 }} /> View in AR
                 </button>
               </model-viewer>
             )}
 
-            {/* Hint overlay */}
             {webglSupported === true && mvLoaded && (
-              <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-black/50 border border-white/10 text-xs text-white/40 pointer-events-none backdrop-blur-sm">
+              <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-white/90 border border-slate-200 text-xs text-slate-400 pointer-events-none shadow-sm backdrop-blur-sm">
                 Drag to rotate · Scroll to zoom
               </div>
             )}
           </motion.div>
 
-          {/* QR side panel — toggled by button */}
+          {/* QR side panel */}
           {showQR && (
-            <motion.div
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="w-64 shrink-0 rounded-2xl border border-accent/30 bg-accent/5 p-5 flex flex-col items-center justify-center text-center gap-4 shadow-[0_0_25px_rgba(191,0,255,0.1)] relative overflow-hidden"
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
+              className="w-60 shrink-0 card p-5 flex flex-col items-center justify-center text-center gap-4"
             >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-primary via-accent to-primary" />
-              <p className="text-sm font-semibold text-white/80">Scan to open on mobile</p>
-              <div className="bg-white p-3 rounded-xl">
-                <QRCodeCanvas
-                  id="viewer-qr-canvas"
-                  value={viewerUrl}
-                  size={170}
-                  level="H"
-                  fgColor="#0a0a0f"
-                  bgColor="#ffffff"
-                />
+              <div>
+                <p className="font-semibold text-slate-900 text-sm mb-0.5">Scan to open on mobile</p>
+                <p className="text-xs text-slate-400">Point your camera at the code</p>
               </div>
-              <p className="text-xs font-mono text-muted-foreground break-all px-1">{viewerUrl}</p>
-              <button
-                onClick={downloadQR}
-                className="w-full px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors"
-              >
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                <QRCodeCanvas id="viewer-qr-canvas" value={viewerUrl} size={160} level="H" fgColor="#0f172a" bgColor="#ffffff" />
+              </div>
+              <p className="text-[10px] font-mono text-slate-400 break-all px-1">{viewerUrl}</p>
+              <button onClick={downloadQR} className="btn-secondary w-full text-sm py-2 flex items-center justify-center gap-1.5">
                 Download QR
               </button>
             </motion.div>

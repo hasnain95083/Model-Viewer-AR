@@ -1,0 +1,63 @@
+Redesign the existing ScanAR web app UI to match a clean, minimal, modern SaaS design style similar to a light-themed dashboard (like a product management or restaurant SaaS UI).
+
+IMPORTANT:
+
+Do NOT change or break the existing 3D model viewer and AR functionality
+Keep all backend logic and AR interaction exactly the same
+Only improve and redesign the UI/UX
+
+New Design Style
+
+Switch from dark futuristic theme to a light, minimal, clean UI
+Use soft colors (white, light gray, subtle shadows)
+Add slight accent color (yellow or lime for highlights)
+Use rounded cards, clean spacing, and modern typography
+Remove heavy neon/glow effects
+
+Layout Changes
+
+Hero Section:
+Use a clean, light background
+Large bold heading like:
+“Your Ultimate AR Product Visualization Platform”
+Add a simple subheading
+Keep CTA buttons (Upload Model, Get Started)
+Reduce visual noise, keep it minimal
+Feature / Content Sections:
+Convert into card-based layout (bento grid style)
+Each feature in a soft rounded card with shadow
+Add icons and short descriptions
+3D Viewer Section:
+Keep the existing 3D model viewer EXACTLY the same
+Place it inside a clean card container
+Add subtle border or shadow
+Ensure it remains fully interactive (rotate, zoom, AR)
+Upload Section:
+Convert into a clean drag-and-drop card
+Show file name after selection
+Add simple progress indicator
+Use minimal styling (no neon effects)
+Navigation Bar:
+Light background navbar
+Left: Logo
+Center: Home, Features, Pricing
+Right: Login / Get Started buttons
+Buttons:
+Use soft rounded buttons
+Primary: solid color (yellow/lime accent)
+Secondary: outline or subtle gray
+Typography:
+Use modern font (Inter or similar)
+Clear hierarchy (big headings, smaller descriptions)
+
+Animations
+
+Keep animations minimal and smooth
+Add subtle hover effects (scale, shadow)
+Smooth transitions (fade, slide)
+Remove heavy glowing or cyber effects
+
+Goal
+Transform the UI into a clean, modern SaaS product interface while keeping all core functionality (3D viewer + AR + upload system) fully working and unchanged.
+
+Ensure the app looks like a professional, production-ready SaaS dashboard.

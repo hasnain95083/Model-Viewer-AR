@@ -1,8 +1,98 @@
 import { Layout } from "@/components/Layout";
 import { ScannerIllustration } from "@/components/ScannerIllustration";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { UploadCloud, QrCode, Smartphone, Cuboid, ArrowRight, CheckCircle2, Zap, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+import { UploadCloud, QrCode, Smartphone, Cuboid, ArrowRight, CheckCircle2, Zap, Globe, Play, X } from "lucide-react";
+
+// ── Change this URL to swap the demo video ──────────────────────────────────
+// Supports MP4 direct URL or a YouTube embed URL:
+//   MP4:     "https://example.com/demo.mp4"
+//   YouTube: "https://www.youtube.com/embed/VIDEO_ID?autoplay=1"
+const DEMO_VIDEO_URL = "https://www.w3schools.com/html/mov_bbb.mp4";
+// ────────────────────────────────────────────────────────────────────────────
+
+function isYouTube(url: string) {
+  return url.includes("youtube.com/embed") || url.includes("youtu.be");
+}
+
+function DemoModal({ onClose }: { onClose: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const youtube = isYouTube(DEMO_VIDEO_URL);
+
+  useEffect(() => {
+    if (!youtube && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+    return () => {
+      if (!youtube && videoRef.current) {
+        videoRef.current.pause();
+      }
+    };
+  }, [youtube]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-3xl rounded-2xl overflow-hidden bg-slate-900 border border-slate-700 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-lime-600 flex items-center justify-center">
+              <Play className="w-3.5 h-3.5 text-white fill-white" />
+            </div>
+            <span className="font-semibold text-white text-sm">Product Demo</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="relative w-full bg-black" style={{ aspectRatio: "16/9" }}>
+          {youtube ? (
+            <iframe
+              src={DEMO_VIDEO_URL.includes("autoplay") ? DEMO_VIDEO_URL : `${DEMO_VIDEO_URL}${DEMO_VIDEO_URL.includes("?") ? "&" : "?"}autoplay=1`}
+              className="absolute inset-0 w-full h-full"
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              title="Product Demo"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={DEMO_VIDEO_URL}
+              className="absolute inset-0 w-full h-full object-cover"
+              controls
+              playsInline
+            />
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -13,6 +103,8 @@ const fadeUp = {
 const stagger = (i: number) => ({ ...fadeUp, transition: { duration: 0.4, delay: i * 0.08 } });
 
 export default function Home() {
+  const [demoOpen, setDemoOpen] = useState(false);
+
   return (
     <Layout>
 
@@ -50,6 +142,12 @@ export default function Home() {
                 <Link href="/pricing" className="btn-secondary flex items-center gap-2 text-base px-6 py-3">
                   See Pricing <ArrowRight className="w-4 h-4" />
                 </Link>
+                <button
+                  onClick={() => setDemoOpen(true)}
+                  className="flex items-center gap-2 text-base px-6 py-3 rounded-xl font-semibold border border-slate-300 text-slate-700 bg-white hover:border-slate-400 hover:bg-slate-50 transition-all duration-150 shadow-sm"
+                >
+                  <Play className="w-4 h-4 text-lime-600 fill-lime-600" /> View Demo
+                </button>
               </div>
 
               {/* Trust row */}
@@ -231,6 +329,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <AnimatePresence>
+        {demoOpen && <DemoModal onClose={() => setDemoOpen(false)} />}
+      </AnimatePresence>
 
     </Layout>
   );

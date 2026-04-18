@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
 import { UploadCloud, QrCode, Smartphone, Cuboid, ArrowRight, CheckCircle2, Zap, Shield, Globe } from "lucide-react";
 
 const fadeUp = {
@@ -10,6 +11,95 @@ const fadeUp = {
 };
 
 const stagger = (i: number) => ({ ...fadeUp, transition: { duration: 0.4, delay: i * 0.08 } });
+
+function ScannerAnimation() {
+  const [scanY, setScanY] = useState(10);
+  const [direction, setDirection] = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [dots, setDots] = useState<{ x: number; y: number; id: number }[]>([]);
+  const dotId = useRef(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setScanY((prev) => {
+        const next = prev + direction * 1.1;
+        if (next >= 88) { setDirection(-1); return 88; }
+        if (next <= 10) { setDirection(1); return 10; }
+        return next;
+      });
+      setProgress((prev) => (prev >= 100 ? 0 : prev + 0.55));
+      setDots((prev) => {
+        const filtered = prev.filter((d) => d.id > dotId.current - 30);
+        if (Math.random() > 0.55) {
+          dotId.current += 1;
+          return [...filtered, { x: 8 + Math.random() * 84, y: scanY + (Math.random() - 0.5) * 4, id: dotId.current }];
+        }
+        return filtered;
+      });
+    }, 16);
+    return () => clearInterval(interval);
+  }, [direction, scanY]);
+
+  const cubeLines = [
+    "M 30 25 L 70 25 L 70 65 L 30 65 Z",
+    "M 40 15 L 80 15 L 80 55 L 40 55 Z",
+    "M 30 25 L 40 15", "M 70 25 L 80 15",
+    "M 70 65 L 80 55", "M 30 65 L 40 55",
+  ];
+
+  return (
+    <div className="relative w-full rounded-2xl bg-slate-900 overflow-hidden border border-slate-700 shadow-2xl" style={{ aspectRatio: "4/3" }}>
+      <div className="absolute inset-0 dot-bg opacity-10" />
+
+      <div className="absolute top-3 left-4 flex items-center gap-1.5">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-lime-500/70" />
+        <span className="ml-2 text-[10px] font-mono text-slate-500 tracking-wider">SCAN_AR — 3D CAPTURE</span>
+      </div>
+
+      <svg viewBox="0 0 110 90" className="absolute inset-0 w-full h-full" style={{ top: "10%", left: "5%", width: "90%", height: "80%" }}>
+        {cubeLines.map((d, i) => (
+          <path key={i} d={d} fill="none" stroke="#64748b" strokeWidth="0.6" strokeLinecap="round" />
+        ))}
+
+        <line x1="8" y1={scanY} x2="92" y2={scanY} stroke="#84cc16" strokeWidth="0.7" strokeOpacity="0.9" />
+        <rect x="8" y={scanY - 6} width="84" height="6" fill="url(#scanGlow)" />
+
+        {dots.map((d) => (
+          <circle key={d.id} cx={d.x} cy={d.y} r="0.7" fill="#a3e635" fillOpacity="0.85" />
+        ))}
+
+        <defs>
+          <linearGradient id="scanGlow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#84cc16" stopOpacity="0" />
+            <stop offset="100%" stopColor="#84cc16" stopOpacity="0.15" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[10px] font-mono text-lime-400 tracking-widest flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse" />
+            SCANNING GEOMETRY
+          </span>
+          <span className="text-[10px] font-mono text-slate-400">{Math.round(progress)}%</span>
+        </div>
+        <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-lime-600 to-lime-400 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="flex justify-between mt-2">
+          <span className="text-[9px] font-mono text-slate-600">VERTICES: {dots.length * 12}</span>
+          <span className="text-[9px] font-mono text-slate-600">FORMAT: .GLB</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -61,45 +151,31 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Right: bento preview */}
+            {/* Right: 3D scanner animation */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.15 }}
               className="relative hidden lg:block"
             >
-              <div className="grid grid-cols-2 gap-3">
-                {/* Big card */}
-                <div className="col-span-2 card p-6 flex items-center gap-5">
-                  <div className="w-16 h-16 rounded-2xl bg-lime-50 border border-lime-100 flex items-center justify-center shrink-0">
-                    <Cuboid className="w-8 h-8 text-lime-600" strokeWidth={1.5} />
+              <ScannerAnimation />
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="card p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-lime-50 border border-lime-100 flex items-center justify-center shrink-0">
+                    <Cuboid className="w-5 h-5 text-lime-600" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <p className="font-semibold text-slate-800 mb-0.5">3D Model Uploaded</p>
-                    <p className="text-sm text-slate-500">product-chair.glb · 2.4 MB</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full w-full bg-lime-500 rounded-full" />
-                      </div>
-                      <span className="text-xs text-lime-600 font-semibold">100%</span>
-                    </div>
+                    <p className="text-xs font-semibold text-slate-700">product-chair.glb</p>
+                    <p className="text-xs text-slate-400">2.4 MB · Ready</p>
                   </div>
                 </div>
-                {/* QR card */}
-                <div className="card p-5 flex flex-col items-center justify-center gap-2 aspect-square">
-                  <div className="w-24 h-24 bg-slate-900 rounded-lg grid grid-cols-3 gap-0.5 p-2">
-                    {Array.from({ length: 9 }).map((_, i) => (
-                      <div key={i} className={`rounded-[2px] ${[0,1,3,5,7,8].includes(i) ? "bg-white" : "bg-white/20"}`} />
-                    ))}
+                <div className="card p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-lime-50 border border-lime-100 flex items-center justify-center shrink-0">
+                    <Zap className="w-5 h-5 text-lime-600" />
                   </div>
-                  <p className="text-xs font-medium text-slate-500">Scan for AR</p>
-                </div>
-                {/* Stat card */}
-                <div className="card p-5 flex flex-col gap-1 aspect-square justify-center">
-                  <p className="text-3xl font-extrabold text-slate-900">4.8s</p>
-                  <p className="text-sm font-medium text-slate-500">Avg. processing</p>
-                  <div className="badge badge-lime w-fit mt-1">
-                    <Zap className="w-3 h-3" /> Fast
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">4.8s avg.</p>
+                    <p className="text-xs text-slate-400">Processing time</p>
                   </div>
                 </div>
               </div>

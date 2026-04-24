@@ -130,9 +130,12 @@ router.post("/login", async (req: Request, res: Response) => {
     return;
   }
 
-  if (!user.emailVerified) {
+  // STRICT email-verification gate: block unless emailVerified is explicitly true.
+  // This catches both `false` and `null`, and any future nullable migration.
+  if (user.emailVerified !== true) {
     res.status(403).json({
-      error: "Please verify your email first. Check your inbox.",
+      error:
+        "Your email is not verified. Please check your inbox and verify your email first before logging in.",
       needsVerification: true,
       email: user.email,
     });
@@ -153,6 +156,10 @@ router.post("/verify-email", async (req: Request, res: Response) => {
     return;
   }
 
+  // Look the user up by the token they presented. We deliberately keep the token
+  // in the database after a successful verification (until its 24h expiry) so this
+  // endpoint is fully idempotent — React StrictMode, retries, and double-clicks
+  // can all hit it safely without showing a spurious "invalid link" error.
   const [user] = await db
     .select()
     .from(usersTable)
@@ -163,41 +170,38 @@ router.post("/verify-email", async (req: Request, res: Response) => {
     return;
   }
 
-  if (user.emailVerified) {
-    // Idempotent: token already consumed, but we treat it as success and log them in.
-    const jwt = signToken({ userId: user.id, email: user.email });
-    res.cookie(COOKIE_NAME_EXPORT, jwt, cookieOptions(7 * 24 * 60 * 60 * 1000));
-    res.json({
-      id: user.id,
-      email: user.email,
-      plan: user.plan,
-      alreadyVerified: true,
-    });
-    return;
-  }
-
+  // Token must still be within its TTL window, regardless of verified state.
   if (
     !user.verificationTokenExpiresAt ||
     user.verificationTokenExpiresAt.getTime() < Date.now()
   ) {
-    res.status(400).json({ error: "Verification link has expired. Please sign up again." });
+    res
+      .status(400)
+      .json({ error: "Verification link has expired. Please sign up again." });
     return;
   }
 
-  const [updated] = await db
-    .update(usersTable)
-    .set({
-      emailVerified: true,
-      verificationToken: null,
-      verificationTokenExpiresAt: null,
-    })
-    .where(eq(usersTable.id, user.id))
-    .returning();
+  // First-time verification: flip the flag. We DO NOT null out the token —
+  // the natural 24h expiry is the only invalidation mechanism.
+  let verifiedUser = user;
+  if (user.emailVerified !== true) {
+    const [updated] = await db
+      .update(usersTable)
+      .set({ emailVerified: true })
+      .where(eq(usersTable.id, user.id))
+      .returning();
+    verifiedUser = updated;
+  }
 
   // Log the user in by setting the auth cookie
-  const jwt = signToken({ userId: updated.id, email: updated.email });
+  const jwt = signToken({ userId: verifiedUser.id, email: verifiedUser.email });
   res.cookie(COOKIE_NAME_EXPORT, jwt, cookieOptions(7 * 24 * 60 * 60 * 1000));
-  res.json({ id: updated.id, email: updated.email, plan: updated.plan });
+  res.json({
+    id: verifiedUser.id,
+    email: verifiedUser.email,
+    plan: verifiedUser.plan,
+    alreadyVerified: user.emailVerified === true,
+  });
 });
 
 // POST /api/auth/logout

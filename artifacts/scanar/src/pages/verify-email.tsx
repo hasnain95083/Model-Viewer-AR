@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { CheckCircle2, XCircle, Loader2, Scan, ArrowRight } from "lucide-react";
@@ -11,8 +11,14 @@ export default function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [, navigate] = useLocation();
   const { refreshUser } = useAuth();
+  // Guard against React StrictMode double-invocation and any other rerender:
+  // we must only POST the verify request ONCE per page load.
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
@@ -21,8 +27,6 @@ export default function VerifyEmailPage() {
       setErrorMessage("No verification token was provided in the link.");
       return;
     }
-
-    let cancelled = false;
 
     (async () => {
       try {
@@ -33,7 +37,6 @@ export default function VerifyEmailPage() {
           body: JSON.stringify({ token }),
         });
         const data = await res.json().catch(() => ({}));
-        if (cancelled) return;
 
         if (!res.ok) {
           setStatus("error");
@@ -43,23 +46,17 @@ export default function VerifyEmailPage() {
 
         // Refresh the auth context so the user is now logged in
         await refreshUser();
-        if (cancelled) return;
         setStatus("success");
 
         // Redirect to dashboard after a short delay so the user sees the success state
         setTimeout(() => {
-          if (!cancelled) navigate("/dashboard");
+          navigate("/dashboard");
         }, 1800);
       } catch (err) {
-        if (cancelled) return;
         setStatus("error");
         setErrorMessage(err instanceof Error ? err.message : "Verification failed");
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [navigate, refreshUser]);
 
   return (

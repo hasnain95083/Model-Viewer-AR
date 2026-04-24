@@ -8,27 +8,79 @@ interface SendArgs {
   text: string;
 }
 
+export class MailDeliveryError extends Error {
+  statusCode: number;
+  resendName?: string;
+  resendMessage?: string;
+  rawBody?: string;
+
+  constructor(args: {
+    statusCode: number;
+    message: string;
+    resendName?: string;
+    resendMessage?: string;
+    rawBody?: string;
+  }) {
+    super(args.message);
+    this.name = "MailDeliveryError";
+    this.statusCode = args.statusCode;
+    this.resendName = args.resendName;
+    this.resendMessage = args.resendMessage;
+    this.rawBody = args.rawBody;
+  }
+}
+
 export async function sendMail({ to, subject, html, text }: SendArgs): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    throw new Error("RESEND_API_KEY is not configured");
+    throw new MailDeliveryError({
+      statusCode: 0,
+      message: "RESEND_API_KEY is not configured",
+    });
   }
 
   const from = process.env.MAIL_FROM ?? FROM_DEFAULT;
 
-  const res = await fetch(RESEND_API, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({ from, to, subject, html, text }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Resend API error ${res.status}: ${body || res.statusText}`);
+  let res: Response;
+  try {
+    res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ from, to, subject, html, text }),
+    });
+  } catch (networkErr) {
+    throw new MailDeliveryError({
+      statusCode: 0,
+      message: `Network error talking to Resend: ${
+        networkErr instanceof Error ? networkErr.message : String(networkErr)
+      }`,
+    });
   }
+
+  if (res.ok) return;
+
+  const rawBody = await res.text().catch(() => "");
+  // Resend returns JSON like { "statusCode": 403, "name": "validation_error",
+  //   "message": "You can only send testing emails to your own email address (...)" }
+  let parsed: { name?: string; message?: string; statusCode?: number } = {};
+  try {
+    parsed = rawBody ? JSON.parse(rawBody) : {};
+  } catch {
+    // not JSON — keep raw body
+  }
+
+  throw new MailDeliveryError({
+    statusCode: res.status,
+    resendName: parsed.name,
+    resendMessage: parsed.message,
+    rawBody,
+    message: `Resend API ${res.status} ${res.statusText}${
+      parsed.name ? ` [${parsed.name}]` : ""
+    }${parsed.message ? `: ${parsed.message}` : rawBody ? `: ${rawBody}` : ""}`,
+  });
 }
 
 export function buildVerificationEmail(email: string, link: string): { subject: string; html: string; text: string } {

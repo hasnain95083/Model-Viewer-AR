@@ -12,6 +12,8 @@ export interface RegisterResult {
   pending: boolean;
   email: string;
   message: string;
+  emailDelivered: boolean;
+  deliveryError?: string;
 }
 
 interface AuthContextValue {
@@ -70,7 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       pending: Boolean(data.pending),
       email: data.email ?? email,
-      message: data.message ?? "Please check your email and verify your account before logging in.",
+      message:
+        data.message ??
+        "Please check your email and verify your account before logging in.",
+      emailDelivered: data.emailDelivered !== false,
+      deliveryError: data.deliveryError,
     };
   }, []);
 

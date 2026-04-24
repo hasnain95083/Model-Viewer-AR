@@ -12,7 +12,12 @@ import {
   cookieOptions,
 } from "../lib/auth.js";
 import { requireAuth, type AuthRequest } from "../middlewares/requireAuth.js";
-import { sendMail, buildVerificationEmail, getAppBaseUrl } from "../lib/mailer.js";
+import {
+  sendMail,
+  buildVerificationEmail,
+  getAppBaseUrl,
+  MailDeliveryError,
+} from "../lib/mailer.js";
 
 const router: IRouter = Router();
 
@@ -82,26 +87,65 @@ router.post("/register", async (req: Request, res: Response) => {
   const baseUrl = getAppBaseUrl(req);
   const verifyLink = `${baseUrl}/verify-email?token=${verificationToken}`;
 
-  // Send the email. If sending fails, we delete the user so they can retry.
+  // Try to send the verification email.
+  // SOFT-FAIL POLICY: if Resend rejects the send (e.g. free-tier sandbox restriction
+  // where you can only mail your own address), we keep the user record so they are
+  // not blocked, surface a different message, and log the full upstream error for
+  // diagnosis. The user can still verify manually using the link printed below or
+  // contact support, and login remains blocked until emailVerified flips to true.
+  let emailDelivered = true;
+  let emailErrorSummary: string | undefined;
   try {
     const { subject, html, text } = buildVerificationEmail(user.email, verifyLink);
     await sendMail({ to: user.email, subject, html, text });
+    console.log(`[register] Verification email sent to ${user.email}`);
   } catch (err) {
-    // Roll back the user creation so registration can be retried
-    await db.delete(usersTable).where(eq(usersTable.id, user.id));
-    console.error("[register] Failed to send verification email:", err);
-    res.status(502).json({
-      error: "Could not send verification email. Please try again in a moment.",
-    });
-    return;
+    emailDelivered = false;
+
+    // Print the FULL error from Resend so we can diagnose exactly what went wrong.
+    if (err instanceof MailDeliveryError) {
+      console.error("[register] ✗ Verification email FAILED to send");
+      console.error("  → recipient:      ", user.email);
+      console.error("  → status code:    ", err.statusCode);
+      console.error("  → resend name:    ", err.resendName ?? "(none)");
+      console.error("  → resend message: ", err.resendMessage ?? "(none)");
+      console.error("  → raw body:       ", err.rawBody ?? "(empty)");
+      console.error("  → summary:        ", err.message);
+      emailErrorSummary = err.resendMessage ?? err.message;
+    } else {
+      console.error("[register] ✗ Verification email FAILED (unknown error):", err);
+      emailErrorSummary =
+        err instanceof Error ? err.message : "Unknown email delivery error";
+    }
+
+    // Print the verification link to the server console so the developer can
+    // still verify the account during local/dev testing when sandboxed Resend
+    // refuses to deliver.
+    console.warn(
+      `[register] Manual verification link for ${user.email}: ${verifyLink}`,
+    );
   }
 
-  // Do NOT set the auth cookie — user must verify first.
-  res.status(201).json({
-    pending: true,
-    email: user.email,
-    message: "Please check your email and verify your account before logging in.",
-  });
+  // Do NOT set the auth cookie — user must verify first regardless of email status.
+  if (emailDelivered) {
+    res.status(201).json({
+      pending: true,
+      email: user.email,
+      emailDelivered: true,
+      message:
+        "Please check your email and verify your account before logging in.",
+    });
+  } else {
+    res.status(201).json({
+      pending: true,
+      email: user.email,
+      emailDelivered: false,
+      message:
+        "Account created. If you did not receive a verification email, please contact support.",
+      // Surfaced for client diagnostics; safe to omit in a future hardening pass.
+      deliveryError: emailErrorSummary,
+    });
+  }
 });
 
 // POST /api/auth/login

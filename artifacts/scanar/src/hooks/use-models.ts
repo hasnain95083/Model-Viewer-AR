@@ -20,6 +20,7 @@ export function useUploadModel() {
       const res = await fetch("/api/models/upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
         // Let the browser set the Content-Type to multipart/form-data with the boundary
       });
 

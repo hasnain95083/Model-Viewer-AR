@@ -12,6 +12,7 @@ import UploadPage from "@/pages/upload";
 import ViewerPage from "@/pages/viewer";
 import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
+import VerifyEmailPage from "@/pages/verify-email";
 import DashboardPage from "@/pages/dashboard";
 import PricingPage from "@/pages/pricing";
 import NotFound from "@/pages/not-found";
@@ -96,6 +97,9 @@ function Router() {
         </Route>
         <Route path="/signup">
           <GuestRoute component={SignupPage} />
+        </Route>
+        <Route path="/verify-email">
+          <PageWrapper><VerifyEmailPage /></PageWrapper>
         </Route>
         <Route path="/dashboard">
           <ProtectedRoute component={DashboardPage} />

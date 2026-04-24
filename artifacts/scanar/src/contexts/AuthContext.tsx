@@ -8,11 +8,17 @@ export interface AuthUser {
   plan: Plan;
 }
 
+export interface RegisterResult {
+  pending: boolean;
+  email: string;
+  message: string;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -55,12 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }, []);
 
-  const register = useCallback(async (email: string, password: string) => {
+  const register = useCallback(async (email: string, password: string): Promise<RegisterResult> => {
     const data = await apiFetch("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    setUser(data);
+    // Do NOT set user — they must verify email first
+    return {
+      pending: Boolean(data.pending),
+      email: data.email ?? email,
+      message: data.message ?? "Please check your email and verify your account before logging in.",
+    };
   }, []);
 
   const logout = useCallback(async () => {

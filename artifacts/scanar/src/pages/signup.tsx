@@ -1,7 +1,7 @@
 import { useState, useMemo, type FormEvent } from "react";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft, Check, X } from "lucide-react";
+import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft, Check, X, MailCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PasswordChecks {
@@ -31,6 +31,7 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const { checks, level: pwLevel } = useMemo(() => evaluatePassword(password), [password]);
   const allRequirementsMet = checks.length && checks.number && checks.special;
@@ -47,14 +48,17 @@ export default function SignupPage() {
     if (password !== confirm) { setError("Passwords do not match"); return; }
     setLoading(true);
     try {
-      await register(email.trim(), password);
-      navigate("/dashboard");
+      const result = await register(email.trim(), password);
+      setPendingEmail(result.email);
     } catch (err: any) {
       setError(err.message ?? "Registration failed");
     } finally {
       setLoading(false);
     }
   };
+
+  // After successful signup, void the form & show "check your email" state
+  void navigate;
 
   const submitDisabled = loading || !allRequirementsMet || password !== confirm || !email.trim();
 
@@ -105,6 +109,35 @@ export default function SignupPage() {
             <span className="font-bold text-slate-900 text-lg">ScanAR</span>
           </Link>
 
+          {pendingEmail ? (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+              data-testid="signup-success"
+            >
+              <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-lime-50 border border-lime-200 flex items-center justify-center text-lime-600">
+                <MailCheck className="w-7 h-7" />
+              </div>
+              <h1 className="text-2xl font-extrabold text-slate-900 mb-2">Check your email</h1>
+              <p className="text-slate-500 text-sm mb-1">
+                We sent a verification link to
+              </p>
+              <p className="font-semibold text-slate-900 mb-5 break-all">{pendingEmail}</p>
+              <div className="rounded-xl bg-lime-50 border border-lime-200 p-4 text-left text-sm text-lime-800 mb-6">
+                Please check your email and verify your account before logging in. The link will expire in 24 hours.
+              </div>
+              <p className="text-xs text-slate-400 mb-5">
+                Didn't get it? Check your spam folder, or wait a minute and try signing up again with the same email if it never arrives.
+              </p>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center w-full py-2.5 rounded-xl font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Back to sign in
+              </Link>
+            </motion.div>
+          ) : (<>
           <h1 className="text-2xl font-extrabold text-slate-900 mb-1">Create your account</h1>
           <p className="text-slate-500 text-sm mb-7">Start building AR experiences for free</p>
 
@@ -213,6 +246,7 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link href="/login" className="font-semibold text-lime-600 hover:text-lime-700 transition-colors">Sign in</Link>
           </p>
+          </>)}
         </motion.div>
       </div>
     </div>

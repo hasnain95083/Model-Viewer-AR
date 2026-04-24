@@ -7,7 +7,7 @@ import { db } from "@workspace/db";
 import { modelsTable, usersTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { ListModelsResponse, GetModelResponse } from "@workspace/api-zod";
-import { requireAuth, optionalAuth, type AuthRequest } from "../middlewares/requireAuth.js";
+import { requireAuth, type AuthRequest } from "../middlewares/requireAuth.js";
 import { PLAN_LIMITS } from "./subscription.js";
 import type { Plan } from "@workspace/db";
 
@@ -40,18 +40,15 @@ const upload = multer({
 
 const router: IRouter = Router();
 
-// GET /api/models — list models for current user (or all if not authed for viewer compatibility)
-router.get("/", optionalAuth, async (req: AuthRequest, res) => {
-  let models;
-  if (req.user) {
-    models = await db
-      .select()
-      .from(modelsTable)
-      .where(eq(modelsTable.userId, req.user.userId))
-      .orderBy(modelsTable.createdAt);
-  } else {
-    models = await db.select().from(modelsTable).orderBy(modelsTable.createdAt);
-  }
+// GET /api/models — list ONLY the authenticated user's models
+router.get("/", requireAuth, async (req: AuthRequest, res) => {
+  const userId = req.user!.userId;
+
+  const models = await db
+    .select()
+    .from(modelsTable)
+    .where(eq(modelsTable.userId, userId))
+    .orderBy(modelsTable.createdAt);
 
   const result = models.map((m) => ({
     id: m.id,
@@ -63,11 +60,14 @@ router.get("/", optionalAuth, async (req: AuthRequest, res) => {
   res.json(ListModelsResponse.parse(result));
 });
 
-// GET /api/models/:id
-router.get("/:id", async (req, res) => {
+// GET /api/models/:id — only owner can fetch metadata
+router.get("/:id", requireAuth, async (req: AuthRequest, res) => {
   const { id } = req.params;
+  const userId = req.user!.userId;
+
   const [model] = await db.select().from(modelsTable).where(eq(modelsTable.id, id));
-  if (!model) {
+  if (!model || model.userId !== userId) {
+    // Return 404 (not 403) so we don't leak the existence of other users' models
     res.status(404).json({ error: "Model not found" });
     return;
   }
@@ -80,11 +80,13 @@ router.get("/:id", async (req, res) => {
   }));
 });
 
-// GET /api/models/:id/file
-router.get("/:id/file", async (req, res) => {
+// GET /api/models/:id/file — only owner can stream the underlying file
+router.get("/:id/file", requireAuth, async (req: AuthRequest, res) => {
   const { id } = req.params;
+  const userId = req.user!.userId;
+
   const [model] = await db.select().from(modelsTable).where(eq(modelsTable.id, id));
-  if (!model) {
+  if (!model || model.userId !== userId) {
     res.status(404).json({ error: "Model not found" });
     return;
   }
@@ -96,7 +98,6 @@ router.get("/:id/file", async (req, res) => {
   const ext = path.extname(model.filename).toLowerCase();
   const contentType = ext === ".gltf" ? "model/gltf+json" : "model/gltf-binary";
   res.setHeader("Content-Type", contentType);
-  res.setHeader("Access-Control-Allow-Origin", "*");
   res.sendFile(filePath);
 });
 

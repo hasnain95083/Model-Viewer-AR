@@ -1,8 +1,27 @@
-import { useState, type FormEvent } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import { useLocation, Link } from "wouter";
-import { motion } from "framer-motion";
-import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft, Check, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+
+interface PasswordChecks {
+  length: boolean;
+  number: boolean;
+  special: boolean;
+}
+
+function evaluatePassword(pw: string): { checks: PasswordChecks; score: number; level: "weak" | "medium" | "strong" | null } {
+  const checks: PasswordChecks = {
+    length: pw.length >= 8,
+    number: /\d/.test(pw),
+    special: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(pw),
+  };
+  const score = Object.values(checks).filter(Boolean).length;
+  if (pw.length === 0) return { checks, score: 0, level: null };
+  const level: "weak" | "medium" | "strong" =
+    score < 2 ? "weak" : score < 3 ? "medium" : "strong";
+  return { checks, score, level };
+}
 
 export default function SignupPage() {
   const { register } = useAuth();
@@ -13,7 +32,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const pwStrength = password.length === 0 ? null : password.length < 6 ? "weak" : password.length < 10 ? "fair" : "strong";
+  const { checks, level: pwLevel } = useMemo(() => evaluatePassword(password), [password]);
+  const allRequirementsMet = checks.length && checks.number && checks.special;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,7 +41,9 @@ export default function SignupPage() {
     if (!email.trim()) { setError("Email is required"); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Invalid email address"); return; }
     if (!password) { setError("Password is required"); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
+    if (!checks.length) { setError("Password must be at least 8 characters"); return; }
+    if (!checks.number) { setError("Password must contain at least one number"); return; }
+    if (!checks.special) { setError("Password must contain at least one special character (e.g. ! @ # $ %)"); return; }
     if (password !== confirm) { setError("Passwords do not match"); return; }
     setLoading(true);
     try {
@@ -33,6 +55,8 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  const submitDisabled = loading || !allRequirementsMet || password !== confirm || !email.trim();
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -107,17 +131,63 @@ export default function SignupPage() {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 6 characters" autoComplete="new-password" className="input-field pl-10" />
+                  placeholder="Min. 8 chars, 1 number, 1 symbol" autoComplete="new-password" className="input-field pl-10" />
               </div>
-              {pwStrength && (
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  {["weak", "fair", "strong"].map((lv, i) => {
-                    const active = pwStrength === "weak" ? i === 0 : pwStrength === "fair" ? i <= 1 : true;
-                    return <div key={lv} className={`h-1 flex-1 rounded-full transition-all ${active ? pwStrength === "weak" ? "bg-red-400" : pwStrength === "fair" ? "bg-amber-400" : "bg-lime-500" : "bg-slate-200"}`} />;
-                  })}
-                  <span className={`text-xs font-medium ml-1 ${pwStrength === "weak" ? "text-red-500" : pwStrength === "fair" ? "text-amber-500" : "text-lime-600"}`}>{pwStrength}</span>
-                </div>
-              )}
+              <AnimatePresence>
+                {pwLevel && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      {[0, 1, 2].map((i) => {
+                        const active =
+                          pwLevel === "weak" ? i === 0 :
+                          pwLevel === "medium" ? i <= 1 : true;
+                        const color =
+                          pwLevel === "weak" ? "bg-red-400" :
+                          pwLevel === "medium" ? "bg-amber-400" : "bg-lime-500";
+                        return (
+                          <div
+                            key={i}
+                            className={`h-1 flex-1 rounded-full transition-all ${active ? color : "bg-slate-200"}`}
+                          />
+                        );
+                      })}
+                      <span
+                        className={`text-xs font-medium ml-1 capitalize ${
+                          pwLevel === "weak" ? "text-red-500" :
+                          pwLevel === "medium" ? "text-amber-500" : "text-lime-600"
+                        }`}
+                        data-testid="password-strength"
+                      >
+                        {pwLevel}
+                      </span>
+                    </div>
+
+                    <ul className="mt-2 space-y-1 text-xs">
+                      {[
+                        { ok: checks.length, label: "At least 8 characters" },
+                        { ok: checks.number, label: "Contains a number" },
+                        { ok: checks.special, label: "Contains a special character (! @ # $ %)" },
+                      ].map((req) => (
+                        <li key={req.label} className="flex items-center gap-1.5">
+                          {req.ok ? (
+                            <Check className="w-3.5 h-3.5 text-lime-600 shrink-0" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                          )}
+                          <span className={req.ok ? "text-lime-700" : "text-slate-500"}>
+                            {req.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="space-y-1.5">
@@ -132,7 +202,7 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={submitDisabled} data-testid="signup-submit"
               className="w-full py-2.5 rounded-xl font-semibold bg-lime-600 text-white hover:bg-lime-700 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : <><UserPlus className="w-4 h-4" /> Create Account</>}

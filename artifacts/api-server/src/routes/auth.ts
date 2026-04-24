@@ -22,8 +22,20 @@ router.post("/register", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Email is required" });
     return;
   }
-  if (!password || typeof password !== "string" || password.length < 6) {
-    res.status(400).json({ error: "Password must be at least 6 characters" });
+  if (!password || typeof password !== "string") {
+    res.status(400).json({ error: "Password is required" });
+    return;
+  }
+  if (password.length < 8) {
+    res.status(400).json({ error: "Password must be at least 8 characters" });
+    return;
+  }
+  if (!/\d/.test(password)) {
+    res.status(400).json({ error: "Password must contain at least one number" });
+    return;
+  }
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
+    res.status(400).json({ error: "Password must contain at least one special character (e.g. ! @ # $ %)" });
     return;
   }
 

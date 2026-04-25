@@ -75,11 +75,15 @@ ScanAR is a SaaS-style AR platform where users upload 3D models (.glb/.gltf) and
 - `artifacts/api-server/src/lib/auth.ts` — JWT sign/verify, bcrypt helpers, cookie options
 - `artifacts/api-server/src/middlewares/requireAuth.ts` — auth middleware
 - `artifacts/api-server/src/routes/auth.ts` — register/login/logout/me routes
+- Signup collects: First Name (required), Last Name (required), Business Name (optional), Email, Password
+- `display_name` is derived server-side: `business_name` if non-empty, else `first_name`. Used as the user's identity everywhere in the UI (dashboard greeting, header pill, initials).
+- `toAuthResponse(user)` helper in auth.ts returns `{id, email, plan, firstName, lastName, businessName, displayName}` and is used by register/login/verify-email/me for a single canonical shape.
+- Email verification required before login (Resend). Register is soft-fail: returns `201 { emailDelivered: false }` if the email provider rejects so the user is still created and can request resend.
 
 ### Database (lib/db)
 - PostgreSQL + Drizzle ORM
 - Table: `models` (id, name, filename, filepath, createdAt)
-- Table: `users` (id, email, passwordHash, createdAt)
+- Table: `users` (id, email, passwordHash, firstName, lastName, businessName?, displayName, plan, emailVerified, verificationToken?, createdAt)
 
 ## TypeScript & Composite Projects
 

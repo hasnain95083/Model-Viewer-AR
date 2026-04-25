@@ -1,7 +1,7 @@
 import { useState, useMemo, type FormEvent } from "react";
 import { useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft, Check, X, MailCheck } from "lucide-react";
+import { Mail, Lock, UserPlus, Loader2, AlertCircle, Scan, CheckCircle2, ArrowLeft, Check, X, MailCheck, User, Building2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PasswordChecks {
@@ -26,6 +26,9 @@ function evaluatePassword(pw: string): { checks: PasswordChecks; score: number; 
 export default function SignupPage() {
   const { register } = useAuth();
   const [, navigate] = useLocation();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -40,6 +43,8 @@ export default function SignupPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!firstName.trim()) { setError("First name is required"); return; }
+    if (!lastName.trim()) { setError("Last name is required"); return; }
     if (!email.trim()) { setError("Email is required"); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Invalid email address"); return; }
     if (!password) { setError("Password is required"); return; }
@@ -49,7 +54,13 @@ export default function SignupPage() {
     if (password !== confirm) { setError("Passwords do not match"); return; }
     setLoading(true);
     try {
-      const result = await register(email.trim(), password);
+      const result = await register({
+        email: email.trim(),
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        businessName: businessName.trim() || undefined,
+      });
       setPendingEmail(result.email);
       setEmailDelivered(result.emailDelivered);
       if (!result.emailDelivered && result.deliveryError) {
@@ -189,6 +200,62 @@ export default function SignupPage() {
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
               </motion.div>
             )}
+
+            {/* First Name + Last Name (required, side by side) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">First Name</label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Ahmed"
+                    autoComplete="given-name"
+                    className="input-field pl-10"
+                    data-testid="input-first-name"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">Last Name</label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Khan"
+                    autoComplete="family-name"
+                    className="input-field pl-10"
+                    data-testid="input-last-name"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Business Name (optional) */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-slate-700">
+                Business Name <span className="text-slate-400 font-normal">(optional)</span>
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Optional — leave blank if you are an individual user"
+                  autoComplete="organization"
+                  className="input-field pl-10"
+                  data-testid="input-business-name"
+                />
+              </div>
+              <p className="text-xs text-slate-400 pl-1">
+                If provided, this becomes your display name across ScanAR.
+              </p>
+            </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-700">Email</label>

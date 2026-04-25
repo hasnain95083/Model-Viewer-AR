@@ -23,9 +23,36 @@ const router: IRouter = Router();
 
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+// Single source of truth for the user-shaped JSON we send back to the client.
+// Keeps `displayName` derivation defensive even if a row was created via a
+// future code path that forgot to set it.
+type DbUser = typeof usersTable.$inferSelect;
+function toAuthResponse(user: DbUser) {
+  const displayName =
+    user.displayName ??
+    (user.businessName && user.businessName.trim().length > 0
+      ? user.businessName
+      : user.firstName);
+  return {
+    id: user.id,
+    email: user.email,
+    plan: user.plan,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    businessName: user.businessName,
+    displayName,
+  };
+}
+
 // POST /api/auth/register
 router.post("/register", async (req: Request, res: Response) => {
-  const { email, password } = req.body ?? {};
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    businessName,
+  } = req.body ?? {};
 
   if (!email || typeof email !== "string") {
     res.status(400).json({ error: "Email is required" });
@@ -47,6 +74,26 @@ router.post("/register", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Password must contain at least one special character (e.g. ! @ # $ %)" });
     return;
   }
+
+  if (!firstName || typeof firstName !== "string" || !firstName.trim()) {
+    res.status(400).json({ error: "First name is required" });
+    return;
+  }
+  if (!lastName || typeof lastName !== "string" || !lastName.trim()) {
+    res.status(400).json({ error: "Last name is required" });
+    return;
+  }
+
+  const normalizedFirstName = firstName.trim();
+  const normalizedLastName = lastName.trim();
+  // businessName is optional — treat empty / whitespace / non-string as "not provided"
+  const normalizedBusinessName =
+    typeof businessName === "string" && businessName.trim().length > 0
+      ? businessName.trim()
+      : null;
+
+  // Display-name rule: business name takes precedence; otherwise first name.
+  const displayName = normalizedBusinessName ?? normalizedFirstName;
 
   const normalizedEmail = email.trim().toLowerCase();
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -76,6 +123,10 @@ router.post("/register", async (req: Request, res: Response) => {
       id,
       email: normalizedEmail,
       passwordHash,
+      firstName: normalizedFirstName,
+      lastName: normalizedLastName,
+      businessName: normalizedBusinessName,
+      displayName,
       plan: "free",
       emailVerified: false,
       verificationToken,
@@ -188,7 +239,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
   const token = signToken({ userId: user.id, email: user.email });
   res.cookie(COOKIE_NAME_EXPORT, token, cookieOptions(7 * 24 * 60 * 60 * 1000));
-  res.json({ id: user.id, email: user.email, plan: user.plan });
+  res.json(toAuthResponse(user));
 });
 
 // POST /api/auth/verify-email
@@ -241,9 +292,7 @@ router.post("/verify-email", async (req: Request, res: Response) => {
   const jwt = signToken({ userId: verifiedUser.id, email: verifiedUser.email });
   res.cookie(COOKIE_NAME_EXPORT, jwt, cookieOptions(7 * 24 * 60 * 60 * 1000));
   res.json({
-    id: verifiedUser.id,
-    email: verifiedUser.email,
-    plan: verifiedUser.plan,
+    ...toAuthResponse(verifiedUser),
     alreadyVerified: user.emailVerified === true,
   });
 });
@@ -266,7 +315,7 @@ router.get("/me", requireAuth, async (req: AuthRequest, res: Response) => {
     return;
   }
 
-  res.json({ id: user.id, email: user.email, plan: user.plan });
+  res.json(toAuthResponse(user));
 });
 
 export default router;

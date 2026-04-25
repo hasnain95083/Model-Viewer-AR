@@ -15,7 +15,16 @@ export default function DashboardPage() {
   const upgradeMutation = useUpgradePlan();
   const { toast } = useToast();
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "?";
+  // Initials follow displayName (first letters of each word, up to 2).
+  const initials =
+    (user?.displayName ?? user?.email ?? "?")
+      .trim()
+      .split(/\s+/)
+      .map((p) => p[0] ?? "")
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+  const greetingName = user?.displayName ?? "there";
   const plan = (sub?.plan ?? user?.plan ?? "free") as Plan;
   const planMeta = PLAN_META[plan];
   const modelCount = sub?.modelCount ?? 0;
@@ -41,13 +50,15 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-lime-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-lime-600 flex items-center justify-center text-white font-bold text-sm shadow-sm shrink-0">
               {initials}
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-slate-900">Dashboard</h1>
-              <p className="text-sm text-slate-500">{user?.email}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl font-extrabold text-slate-900 truncate">
+                Welcome, {greetingName}!
+              </h1>
+              <p className="text-sm text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
           <Link

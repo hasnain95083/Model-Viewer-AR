@@ -6,6 +6,10 @@ export interface AuthUser {
   id: string;
   email: string;
   plan: Plan;
+  firstName: string;
+  lastName: string;
+  businessName: string | null;
+  displayName: string;
 }
 
 export interface RegisterResult {
@@ -16,11 +20,19 @@ export interface RegisterResult {
   deliveryError?: string;
 }
 
+export interface RegisterArgs {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  businessName?: string;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<RegisterResult>;
+  register: (args: RegisterArgs) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -63,15 +75,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }, []);
 
-  const register = useCallback(async (email: string, password: string): Promise<RegisterResult> => {
+  const register = useCallback(async (args: RegisterArgs): Promise<RegisterResult> => {
     const data = await apiFetch("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(args),
     });
     // Do NOT set user — they must verify email first
     return {
       pending: Boolean(data.pending),
-      email: data.email ?? email,
+      email: data.email ?? args.email,
       message:
         data.message ??
         "Please check your email and verify your account before logging in.",

@@ -17,7 +17,15 @@ export function Layout({ children }: LayoutProps) {
     navigate("/");
   };
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? "";
+  // Initials are derived from displayName so business accounts also get the
+  // right two letters (e.g. "Home Decor Studio" → "HD").
+  const initials = (user?.displayName ?? user?.email ?? "")
+    .trim()
+    .split(/\s+/)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
   const isActive = (path: string) => location === path;
 
   const navLinks = [
@@ -75,11 +83,12 @@ export function Layout({ children }: LayoutProps) {
                 >
                   <UploadCloud className="w-4 h-4" /> Upload
                 </Link>
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200">
-                  <div className="w-6 h-6 rounded-full bg-lime-600 flex items-center justify-center text-[10px] font-bold text-white">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-200 max-w-[220px]">
+                  <div className="w-6 h-6 rounded-full bg-lime-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                     {initials}
                   </div>
-                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{user.plan}</span>
+                  <span className="text-xs font-semibold text-slate-700 truncate">{user.displayName}</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">{user.plan}</span>
                 </div>
                 <button
                   onClick={handleLogout}
